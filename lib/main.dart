@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:mesorry/screens/HomeFrame.dart';
+import 'package:mesorry/screens/searchFrame.dart';
 import 'screens/profile.dart';
 import 'screens/supply.dart';
-import 'screens/searchFrame.dart';
+import 'screens/konsultasiFrame.dart';
 import 'screens/login_screen.dart';
-import 'screens/search.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -99,15 +100,16 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin {
-  int _currentIndex = 0;
+  int _currentIndex = 2; // Set Home (index 2) as default
   late PageController _pageController;
   late AnimationController _animationController;
 
   final List<Widget> _pages = [
-    HomeScreen(),
-    ProfileScreen(),
     BussinesScreen(),
     SearchScreen(),
+    HomeScreen(),
+    KonsultasiScreen(),
+    ProfileScreen(),
   ];
 
   @override
@@ -128,8 +130,8 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
   }
 
   Future<bool> _onWillPop() async {
-    if (_currentIndex != 0) {
-      _onItemTapped(0);
+    if (_currentIndex != 2) { // Home is at index 2
+      _onItemTapped(2);
       return false;
     }
     return true;
@@ -209,24 +211,29 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
             unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal),
             items: const [
               BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
-                activeIcon: Icon(Icons.home),
-                label: 'Beranda',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                activeIcon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.store_outlined),
-                activeIcon: Icon(Icons.store),
-                label: 'Supply',
+                icon: Icon(Icons.food_bank_outlined),
+                activeIcon: Icon(Icons.food_bank),
+                label: 'Asupan',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.search_outlined),
                 activeIcon: Icon(Icons.search),
                 label: 'Search',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home_outlined),
+                activeIcon: Icon(Icons.home),
+                label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.medical_information_outlined),
+                activeIcon: Icon(Icons.medical_information),
+                label: 'Konsultasi',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                activeIcon: Icon(Icons.person),
+                label: 'Profile',
               ),
             ],
           ),

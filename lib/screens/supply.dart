@@ -15,6 +15,7 @@ class _BussinesScreenState extends State<BussinesScreen> {
   int selectedMenuCount = 0;
   int totalCalories = 0;
   final TextEditingController _searchController = TextEditingController();
+  int _activeTabIndex = 0; // 0: Cari Makanan, 1: Terakhir Dimakan, 2: Catatan Minum
 
   // Custom color scheme
   static const MaterialColor customGreen = MaterialColor(
@@ -90,6 +91,154 @@ class _BussinesScreenState extends State<BussinesScreen> {
     });
   }
 
+  void _switchTab(int index) {
+    setState(() {
+      _activeTabIndex = index;
+    });
+  }
+
+  Widget _buildTabContent() {
+    switch (_activeTabIndex) {
+      case 0:
+        return _buildCariMakananTab();
+      case 1:
+        return _buildTerakhirDimakanTab();
+      case 2:
+        return _buildCatatanMinumTab();
+      default:
+        return _buildCariMakananTab();
+    }
+  }
+
+  Widget _buildCariMakananTab() {
+    return Column(
+      children: [
+        // Search bar
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Cari makanan/minuman',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+            ),
+          ),
+        ),
+
+        // Selected menu counter
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16.0),
+          padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey[300]!),
+            borderRadius: BorderRadius.circular(8.0),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Column(
+                children: [
+                  const Text('Jumlah Menu'),
+                  Text(
+                    '$selectedMenuCount',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  const Text('Total Kalori'),
+                  Text(
+                    '$totalCalories',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // Menu list
+        Expanded(
+          child: ListView.builder(
+            itemCount: menuItems.length,
+            itemBuilder: (context, index) {
+              return Card(
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 4.0,
+                ),
+                child: ListTile(
+                  title: Text(menuItems[index]['name']),
+                  subtitle: Text('${menuItems[index]['calories']} kalori'),
+                  onTap: () {
+                    setState(() {
+                      selectedMenuCount++;
+                      totalCalories += menuItems[index]['calories'] as int;
+                    });
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTerakhirDimakanTab() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.history, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            'Riwayat Makanan',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Makanan yang terakhir dimakan akan muncul di sini',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCatatanMinumTab() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.local_drink, size: 64, color: Colors.blue),
+          SizedBox(height: 16),
+          Text(
+            'Catatan Minum',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Catat asupan air minum harian Anda di sini',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -111,93 +260,29 @@ class _BussinesScreenState extends State<BussinesScreen> {
           Row(
             children: [
               Expanded(
-                child: _buildTabButton('Cari Makanan', true),
+                child: GestureDetector(
+                  onTap: () => _switchTab(0),
+                  child: _buildTabButton('Cari Makanan', _activeTabIndex == 0),
+                ),
               ),
               Expanded(
-                child: _buildTabButton('Terakhir Dimakan', false),
+                child: GestureDetector(
+                  onTap: () => _switchTab(1),
+                  child: _buildTabButton('Terakhir Dimakan', _activeTabIndex == 1),
+                ),
               ),
               Expanded(
-                child: _buildTabButton('Catatan Minum', false),
+                child: GestureDetector(
+                  onTap: () => _switchTab(2),
+                  child: _buildTabButton('Catatan Minum', _activeTabIndex == 2),
+                ),
               ),
             ],
           ),
 
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Cari makanan/minuman',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-              ),
-            ),
-          ),
-
-          // Selected menu counter
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16.0),
-            padding: const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey[300]!),
-              borderRadius: BorderRadius.circular(8.0),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Column(
-                  children: [
-                    const Text('Jumlah Menu'),
-                    Text(
-                      '$selectedMenuCount',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  children: [
-                    const Text('Total Kalori'),
-                    Text(
-                      '$totalCalories',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // Menu list
+          // Tab content
           Expanded(
-            child: ListView.builder(
-              itemCount: menuItems.length,
-              itemBuilder: (context, index) {
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 4.0,
-                  ),
-                  child: ListTile(
-                    title: Text(menuItems[index]['name']),
-                    onTap: () {
-                      setState(() {
-                        selectedMenuCount++;
-                        totalCalories += menuItems[index]['calories'] as int;
-                      });
-                    },
-                  ),
-                );
-              },
-            ),
+            child: _buildTabContent(),
           ),
         ],
       ),
