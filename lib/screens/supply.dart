@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'riwayat_makanan.dart';
+import 'catatan_minum.dart';
 
 class BussinesScreen extends StatefulWidget {
-  const BussinesScreen({Key? key}) : super(key: key);
+  const BussinesScreen({super.key});
 
   @override
   _BussinesScreenState createState() => _BussinesScreenState();
 }
 
 class _BussinesScreenState extends State<BussinesScreen> {
-  int _currentImageIndex = 0;
+  final int _currentImageIndex = 0;
   Timer? _timer;
   final PageController _pageController = PageController();
   int selectedMenuCount = 0;
   int totalCalories = 0;
   final TextEditingController _searchController = TextEditingController();
-  int _activeTabIndex = 0; // 0: Cari Makanan, 1: Terakhir Dimakan, 2: Catatan Minum
+  int _activeTabIndex = 0;
+  List<dynamic> menuItems = [];
+  bool isLoading = true;
 
-  // Custom color scheme
   static const MaterialColor customGreen = MaterialColor(
     0xFF00880C,
     <int, Color>{
@@ -26,7 +31,7 @@ class _BussinesScreenState extends State<BussinesScreen> {
       200: Color(0xFFA5D6A7),
       300: Color(0xFF81C784),
       400: Color(0xFF66BB6A),
-      500: Color(0xFF00880C), // Primary
+      500: Color(0xFF00880C),
       600: Color(0xFF43A047),
       700: Color(0xFF388E3C),
       800: Color(0xFF2E7D32),
@@ -34,61 +39,166 @@ class _BussinesScreenState extends State<BussinesScreen> {
     },
   );
 
-  // Carousel items
-  final List<Map<String, String>> _carouselItems = [
-    {
-      'image': 'assets/carousel1.jpg',
-      'title': 'Special Menu 1',
-    },
-    {
-      'image': 'assets/carousel2.jpg',
-      'title': 'Special Menu 2',
-    },
-    {
-      'image': 'assets/carousel3.jpg',
-      'title': 'Special Menu 3',
-    },
-  ];
-
-  // Food menu items
-  final List<Map<String, dynamic>> menuItems = [
-    {'name': 'Ayam Goreng', 'calories': 250},
-    {'name': 'Ayam Kecap', 'calories': 300},
-    {'name': 'Opor Ayam', 'calories': 280},
-    {'name': 'Ayam Panggang', 'calories': 220},
-    {'name': 'Ayam Pedas', 'calories': 260},
-    {'name': 'Abon', 'calories': 180},
-  ];
-
   @override
   void initState() {
     super.initState();
-    _startAutoSlide();
+    fetchMenuItems();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
-    _pageController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  void _startAutoSlide() {
-    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (_currentImageIndex < _carouselItems.length - 1) {
-        _currentImageIndex++;
+  Future<void> fetchMenuItems() async {
+    try {
+      final response = await http.get(
+          Uri.parse('http://10.0.2.2/ads_mysql/asupan/get_menu_asupan.php'));
+
+      if (response.statusCode == 200) {
+        setState(() {
+          menuItems = json.decode(response.body)['data'];
+          isLoading = false;
+        });
       } else {
-        _currentImageIndex = 0;
+        throw Exception('Failed to load menu items');
       }
-      if (_pageController.hasClients) {
-        _pageController.animateToPage(
-          _currentImageIndex,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> fetchMenuDetail(String namaMenu) async {
+    try {
+      final response = await http.get(Uri.parse(
+          'http://10.0.2.2/ads_mysql/asupan/bot_sheet_asupan.php?nama_menu=$namaMenu'));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body)['data'];
+        int itemCount = 1;
+
+        showModalBottomSheet(
+          context: context,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.25,
+          ),
+          builder: (context) {
+            return StatefulBuilder(
+              builder: (BuildContext context, StateSetter setModalState) {
+                return Container(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              data['nama_menu'],
+                              style: const TextStyle(
+                                  fontSize: 24, fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              IconButton(
+                                onPressed: () {
+                                  setModalState(() {
+                                    if (itemCount > 1) itemCount--;
+                                  });
+                                },
+                                icon: const Icon(Icons.remove_circle_outline),
+                                color: customGreen,
+                              ),
+                              Container(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8.0),
+                                child: Text(
+                                  itemCount.toString(),
+                                  style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  setModalState(() {
+                                    itemCount++;
+                                  });
+                                },
+                                icon: const Icon(Icons.add_circle_outline),
+                                color: customGreen,
+                              ),
+                              const SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    selectedMenuCount += itemCount;
+                                    totalCalories += (int.tryParse(
+                                                data['kalori'].toString()) ??
+                                            0) *
+                                        itemCount;
+                                  });
+                                  postMenuDetail(
+                                    data['id_menu'], // Kirim id_menu
+                                    data['nama_menu'],
+                                    itemCount,
+                                    int.tryParse(data['kalori'].toString()) ??
+                                        0,
+                                  );
+                                  Navigator.pop(context);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: customGreen,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 24, vertical: 12),
+                                ),
+                                child: const Text(
+                                  'Add',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Kalori: ${data['kalori']}'),
+                              Text('Protein: ${data['protein']}'),
+                              Text('Karbohidrat: ${data['karbohidrat']}'),
+                              Text('Lemak: ${data['lemak']}'),
+                              Text('Gula: ${data['gula']}'),
+                              Text('Satuan: ${data['satuan']}'),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
         );
       }
-    });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal memuat detail menu'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _switchTab(int index) {
@@ -102,18 +212,58 @@ class _BussinesScreenState extends State<BussinesScreen> {
       case 0:
         return _buildCariMakananTab();
       case 1:
-        return _buildTerakhirDimakanTab();
+        return const RiwayatMakananScreen();
       case 2:
-        return _buildCatatanMinumTab();
+        return const CatatanMinumScreen();
       default:
         return _buildCariMakananTab();
     }
   }
 
+  Future<void> postMenuDetail(
+      String idMenu, String namaMenu, int itemCount, int kalori) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://10.0.2.2/ads_mysql/asupan/post_menu_detail.php'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'id_user': '0508e',
+          'id_menu': idMenu,
+          'nama_menu': namaMenu,
+          'jumlah': itemCount,
+          'total_kalori': kalori * itemCount,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Menu berhasil ditambahkan'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        throw Exception('Failed to post menu detail');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal menambahkan menu'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Widget _buildCariMakananTab() {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Column(
       children: [
-        // Search bar
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: TextField(
@@ -127,8 +277,6 @@ class _BussinesScreenState extends State<BussinesScreen> {
             ),
           ),
         ),
-
-        // Selected menu counter
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16.0),
           padding: const EdgeInsets.all(16.0),
@@ -166,8 +314,6 @@ class _BussinesScreenState extends State<BussinesScreen> {
             ],
           ),
         ),
-
-        // Menu list
         Expanded(
           child: ListView.builder(
             itemCount: menuItems.length,
@@ -178,13 +324,10 @@ class _BussinesScreenState extends State<BussinesScreen> {
                   vertical: 4.0,
                 ),
                 child: ListTile(
-                  title: Text(menuItems[index]['name']),
-                  subtitle: Text('${menuItems[index]['calories']} kalori'),
+                  title: Text(menuItems[index]['nama_menu']),
+                  subtitle: const Text('Tap untuk melihat detail'),
                   onTap: () {
-                    setState(() {
-                      selectedMenuCount++;
-                      totalCalories += menuItems[index]['calories'] as int;
-                    });
+                    fetchMenuDetail(menuItems[index]['nama_menu']);
                   },
                 ),
               );
@@ -192,100 +335,6 @@ class _BussinesScreenState extends State<BussinesScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildTerakhirDimakanTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.history, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Riwayat Makanan',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Makanan yang terakhir dimakan akan muncul di sini',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCatatanMinumTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.local_drink, size: 64, color: Colors.blue),
-          SizedBox(height: 16),
-          Text(
-            'Catatan Minum',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Catat asupan air minum harian Anda di sini',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(16.0),
-            child: const Text(
-              'Asupan Hari Ini',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-
-          // Tab buttons
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _switchTab(0),
-                  child: _buildTabButton('Cari Makanan', _activeTabIndex == 0),
-                ),
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _switchTab(1),
-                  child: _buildTabButton('Terakhir Dimakan', _activeTabIndex == 1),
-                ),
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _switchTab(2),
-                  child: _buildTabButton('Catatan Minum', _activeTabIndex == 2),
-                ),
-              ),
-            ],
-          ),
-
-          // Tab content
-          Expanded(
-            child: _buildTabContent(),
-          ),
-        ],
-      ),
     );
   }
 
@@ -307,6 +356,52 @@ class _BussinesScreenState extends State<BussinesScreen> {
           color: isActive ? customGreen : Colors.grey,
           fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
         ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            child: const Text(
+              'Asupan Hari Ini',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _switchTab(0),
+                  child: _buildTabButton('Cari Makanan', _activeTabIndex == 0),
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _switchTab(1),
+                  child:
+                      _buildTabButton('Terakhir Dimakan', _activeTabIndex == 1),
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _switchTab(2),
+                  child: _buildTabButton('Catatan Minum', _activeTabIndex == 2),
+                ),
+              ),
+            ],
+          ),
+          Expanded(
+            child: _buildTabContent(),
+          ),
+        ],
       ),
     );
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'resepFrame.dart'; // Import ResepFrame
+import 'resepFrame.dart'; 
 
 class FoodItem {
   final String idMenu;
@@ -33,7 +33,7 @@ class SelectedFoodScreen extends StatefulWidget {
   final String category;
   final String title;
 
-  SelectedFoodScreen({
+  const SelectedFoodScreen({super.key, 
     required this.category,
     required this.title,
   });

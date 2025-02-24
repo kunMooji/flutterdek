@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Healthy Food App',
+      title: 'Adek App Flutter',
       theme: ThemeData(
         primarySwatch: MaterialColor(
           0xFF00880C,
@@ -43,7 +43,7 @@ class MyApp extends StatelessWidget {
 }
 
 class AuthenticationWrapper extends StatefulWidget {
-  const AuthenticationWrapper({Key? key}) : super(key: key);
+  const AuthenticationWrapper({super.key});
 
   @override
   State<AuthenticationWrapper> createState() => _AuthenticationWrapperState();
@@ -93,13 +93,14 @@ class _AuthenticationWrapperState extends State<AuthenticationWrapper> {
 }
 
 class MainPage extends StatefulWidget {
-  const MainPage({Key? key}) : super(key: key);
+  const MainPage({super.key});
 
   @override
   State<MainPage> createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin {
+class _MainPageState extends State<MainPage>
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 2; // Set Home (index 2) as default
   late PageController _pageController;
   late AnimationController _animationController;
@@ -130,7 +131,7 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
   }
 
   Future<bool> _onWillPop() async {
-    if (_currentIndex != 2) { // Home is at index 2
+    if (_currentIndex != 2) {
       _onItemTapped(2);
       return false;
     }
@@ -208,7 +209,8 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
             selectedFontSize: 12,
             unselectedFontSize: 12,
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
-            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal),
+            unselectedLabelStyle:
+                const TextStyle(fontWeight: FontWeight.normal),
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.food_bank_outlined),

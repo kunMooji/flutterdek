@@ -5,7 +5,7 @@ import 'package:mesorry/screens/selectedFood.dart'; // Import untuk mengakses cl
 class ResepFrame extends StatelessWidget {
   final FoodItem food;
 
-  ResepFrame({required this.food});
+  const ResepFrame({super.key, required this.food});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +20,7 @@ class ResepFrame extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Gambar makanan
-            Container(
+            SizedBox(
               width: double.infinity,
               height: 200,
               child: Image.network(

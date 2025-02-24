@@ -3,6 +3,8 @@ import 'dart:async';
 import 'selectedFood.dart';
 
 class SearchScreen extends StatefulWidget {
+  const SearchScreen({super.key});
+
   @override
   _SearchScreenState createState() => _SearchScreenState();
 }
@@ -139,7 +141,7 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
 
               // Enhanced Carousel
-              Container(
+              SizedBox(
                 height: 220,
                 child: Stack(
                   children: [
@@ -313,7 +315,7 @@ class _SearchScreenState extends State<SearchScreen> {
               ],
             ),
           ),
-          Container(
+          SizedBox(
             height: 160,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,

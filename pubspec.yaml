@@ -32,6 +32,7 @@ dependencies:
   shared_preferences: ^2.2.0
   dash_chat_2: ^0.0.21
   chat_gpt_sdk: ^2.2.5
+  intl: 0.19.0
   http: ^1.1.0
   flutter:
     sdk: flutter
