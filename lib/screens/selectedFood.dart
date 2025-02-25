@@ -89,7 +89,7 @@ class _SelectedFoodScreenState extends State<SelectedFoodScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.green,
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())

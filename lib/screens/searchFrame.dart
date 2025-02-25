@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'selectedFood.dart';
+import 'selectedOlahraga.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -218,7 +219,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(
                           _carouselItems.length,
-                              (index) => AnimatedContainer(
+                          (index) => AnimatedContainer(
                             duration: Duration(milliseconds: 300),
                             margin: EdgeInsets.all(4),
                             width: _currentImageIndex == index ? 20 : 8,
@@ -378,6 +379,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _showItemDialog(String title) {
     switch (title) {
+      // Food categories
       case 'Dessert':
         Navigator.push(
           context,
@@ -411,6 +413,42 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         );
         break;
+
+      // Exercise categories
+      case 'Kardio':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SelectedOlahragaScreen(
+              category: 'kardio',
+              title: 'Menu Kardio',
+            ),
+          ),
+        );
+        break;
+      case 'Kekuatan':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SelectedOlahragaScreen(
+              category: 'kekuatan',
+              title: 'Menu Kekuatan',
+            ),
+          ),
+        );
+        break;
+      case 'Interval':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SelectedOlahragaScreen(
+              category: 'interval',
+              title: 'Menu Interval',
+            ),
+          ),
+        );
+        break;
+
       default:
         showDialog(
           context: context,

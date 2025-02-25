@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'riwayat_makanan.dart';
 import 'catatan_minum.dart';
+import 'menu_detail_bottom_sheet.dart';
 
 class BussinesScreen extends StatefulWidget {
   const BussinesScreen({super.key});
@@ -13,6 +15,8 @@ class BussinesScreen extends StatefulWidget {
 }
 
 class _BussinesScreenState extends State<BussinesScreen> {
+  String userName = '';
+  String userId = '';
   final int _currentImageIndex = 0;
   Timer? _timer;
   final PageController _pageController = PageController();
@@ -43,6 +47,17 @@ class _BussinesScreenState extends State<BussinesScreen> {
   void initState() {
     super.initState();
     fetchMenuItems();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userName = prefs.getString('nama_lengkap') ?? 'User';
+      userId = prefs.getString('id_user') ?? '';
+      selectedMenuCount = prefs.getInt('selectedMenuCount') ?? 0;
+      totalCalories = prefs.getInt('totalCalories') ?? 0;
+    });
   }
 
   @override
@@ -72,133 +87,31 @@ class _BussinesScreenState extends State<BussinesScreen> {
   }
 
   Future<void> fetchMenuDetail(String namaMenu) async {
-    try {
-      final response = await http.get(Uri.parse(
-          'http://10.0.2.2/ads_mysql/asupan/bot_sheet_asupan.php?nama_menu=$namaMenu'));
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body)['data'];
-        int itemCount = 1;
-
-        showModalBottomSheet(
-          context: context,
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.25,
-          ),
-          builder: (context) {
-            return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setModalState) {
-                return Container(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              data['nama_menu'],
-                              style: const TextStyle(
-                                  fontSize: 24, fontWeight: FontWeight.bold),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              IconButton(
-                                onPressed: () {
-                                  setModalState(() {
-                                    if (itemCount > 1) itemCount--;
-                                  });
-                                },
-                                icon: const Icon(Icons.remove_circle_outline),
-                                color: customGreen,
-                              ),
-                              Container(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 8.0),
-                                child: Text(
-                                  itemCount.toString(),
-                                  style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  setModalState(() {
-                                    itemCount++;
-                                  });
-                                },
-                                icon: const Icon(Icons.add_circle_outline),
-                                color: customGreen,
-                              ),
-                              const SizedBox(width: 8),
-                              ElevatedButton(
-                                onPressed: () {
-                                  setState(() {
-                                    selectedMenuCount += itemCount;
-                                    totalCalories += (int.tryParse(
-                                                data['kalori'].toString()) ??
-                                            0) *
-                                        itemCount;
-                                  });
-                                  postMenuDetail(
-                                    data['id_menu'], // Kirim id_menu
-                                    data['nama_menu'],
-                                    itemCount,
-                                    int.tryParse(data['kalori'].toString()) ??
-                                        0,
-                                  );
-                                  Navigator.pop(context);
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: customGreen,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 24, vertical: 12),
-                                ),
-                                child: const Text(
-                                  'Add',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Kalori: ${data['kalori']}'),
-                              Text('Protein: ${data['protein']}'),
-                              Text('Karbohidrat: ${data['karbohidrat']}'),
-                              Text('Lemak: ${data['lemak']}'),
-                              Text('Gula: ${data['gula']}'),
-                              Text('Satuan: ${data['satuan']}'),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
+    showModalBottomSheet(
+      context: context,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.25,
+      ),
+      builder: (context) {
+        return MenuDetailBottomSheet(
+          menuName: namaMenu,
+          userId: userId,
+          onMenuAdded: (count, calories) {
+            setState(() {
+              selectedMenuCount += count;
+              totalCalories += calories;
+            });
+            _saveCalorieData();
           },
         );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gagal memuat detail menu'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+      },
+    );
+  }
+
+  Future<void> _saveCalorieData() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setInt('selectedMenuCount', selectedMenuCount);
+    prefs.setInt('totalCalories', totalCalories);
   }
 
   void _switchTab(int index) {
@@ -220,47 +133,20 @@ class _BussinesScreenState extends State<BussinesScreen> {
     }
   }
 
-  Future<void> postMenuDetail(
-      String idMenu, String namaMenu, int itemCount, int kalori) async {
-    try {
-      final response = await http.post(
-        Uri.parse('http://10.0.2.2/ads_mysql/asupan/post_menu_detail.php'),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, dynamic>{
-          'id_user': '0508e',
-          'id_menu': idMenu,
-          'nama_menu': namaMenu,
-          'jumlah': itemCount,
-          'total_kalori': kalori * itemCount,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Menu berhasil ditambahkan'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        throw Exception('Failed to post menu detail');
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gagal menambahkan menu'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
   Widget _buildCariMakananTab() {
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
+
+    // Filter the menu items based on search query
+    final filteredMenuItems = _searchController.text.isEmpty
+        ? menuItems
+        : menuItems
+            .where((item) => item['nama_menu']
+                .toString()
+                .toLowerCase()
+                .contains(_searchController.text.toLowerCase()))
+            .toList();
 
     return Column(
       children: [
@@ -270,11 +156,16 @@ class _BussinesScreenState extends State<BussinesScreen> {
             controller: _searchController,
             decoration: InputDecoration(
               hintText: 'Cari makanan/minuman',
+              prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8.0),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
             ),
+            onChanged: (value) {
+              // Trigger rebuild when search text changes
+              setState(() {});
+            },
           ),
         ),
         Container(
@@ -316,7 +207,7 @@ class _BussinesScreenState extends State<BussinesScreen> {
         ),
         Expanded(
           child: ListView.builder(
-            itemCount: menuItems.length,
+            itemCount: filteredMenuItems.length,
             itemBuilder: (context, index) {
               return Card(
                 margin: const EdgeInsets.symmetric(
@@ -324,10 +215,10 @@ class _BussinesScreenState extends State<BussinesScreen> {
                   vertical: 4.0,
                 ),
                 child: ListTile(
-                  title: Text(menuItems[index]['nama_menu']),
+                  title: Text(filteredMenuItems[index]['nama_menu']),
                   subtitle: const Text('Tap untuk melihat detail'),
                   onTap: () {
-                    fetchMenuDetail(menuItems[index]['nama_menu']);
+                    fetchMenuDetail(filteredMenuItems[index]['nama_menu']);
                   },
                 ),
               );

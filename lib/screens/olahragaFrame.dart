@@ -1,18 +1,17 @@
-// File: resepFrame.dart
 import 'package:flutter/material.dart';
-import 'package:mesorry/screens/selectedFood.dart'; // Import untuk mengakses class FoodItem
+import 'package:mesorry/screens/selectedOlahraga.dart'; // Import untuk mengakses class FoodItem
 
-class ResepFrame extends StatelessWidget {
-  final FoodItem food;
+class OlahragaFrame extends StatelessWidget {
+  final OlahragaItem olahraga;
 
-  const ResepFrame({super.key, required this.food});
+  const OlahragaFrame({super.key, required this.olahraga});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(food.namaMenu),
-        backgroundColor: Colors.green,
+        title: Text(olahraga.namaOlahraga),
+        backgroundColor: Colors.blue,
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16),
@@ -23,7 +22,7 @@ class ResepFrame extends StatelessWidget {
               width: double.infinity,
               height: 200,
               child: Image.network(
-                'http://10.0.2.2/ads_mysql/image/${food.gambar}',
+                'http://10.0.2.2/ads_mysql/image/${olahraga.gambar}',
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
@@ -52,7 +51,7 @@ class ResepFrame extends StatelessWidget {
                     ),
                     SizedBox(width: 8),
                     Text(
-                      food.kalori,
+                      olahraga.kalori,
                       style: TextStyle(fontSize: 16),
                     ),
                   ],
@@ -71,7 +70,7 @@ class ResepFrame extends StatelessWidget {
             ),
             SizedBox(height: 10),
             Text(
-              food.resep,
+              olahraga.deskripsi,
               style: TextStyle(fontSize: 16),
             ),
           ],
